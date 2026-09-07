@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontdep
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: front
+  template:
+    metadata:
+      labels:
+        app: front
+    spec:
+      containers:
+        - name: front
+          image: brahimbtf/front-k3s-app
+          ports:
+            - containerPort: 3000
+          envFrom:
+            - configMapRef:
+                name: configmapprojetk3s
+            - secretRef:
+                name: secretprojetk3s
+          resources:
+            requests:
+              memory: 300Mi
+              cpu:  200m
+            limits:
+              memory: 500Mi
+              cpu: 300m

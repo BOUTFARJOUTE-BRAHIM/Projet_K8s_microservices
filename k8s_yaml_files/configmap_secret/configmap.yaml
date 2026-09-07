@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: configmapprojetk3s
+data:
+#  DB_HOST: "clusterdb-rw.default.svc.cluster.local"
+  DB_HOST: "database01"
+  DB_PORT: "5432"
+  DB_NAME: "ecommerce"
+

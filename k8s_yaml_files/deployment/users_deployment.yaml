@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: usersdep
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: users
+  template:
+    metadata:
+      labels:
+        app: users
+    spec:
+      containers:
+        - name: users
+          image: brahimbtf/users-k3s-app
+          ports:
+            - containerPort: 8001
+          envFrom:
+            - configMapRef:
+                name: configmapprojetk3s
+            - secretRef:
+                name: secretprojetk3s
+          resources:
+            requests:
+              memory: 300Mi
+              cpu:  200m
+            limits:
+              memory: 500Mi
+              cpu: 300m
+
+

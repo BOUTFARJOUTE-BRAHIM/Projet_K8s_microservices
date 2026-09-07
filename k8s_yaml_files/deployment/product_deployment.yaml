@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: productdep
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: product
+  template:
+    metadata:
+      labels:
+        app: product
+    spec:
+      containers:
+        - name: product
+          image: brahimbtf/product-k3s-app
+          ports:
+            - containerPort: 3001
+          envFrom:
+            - configMapRef:
+                name: configmapprojetk3s
+            - secretRef:
+                name: secretprojetk3s
+          resources:
+            requests:
+              memory: 300Mi
+              cpu:  200m
+            limits:
+              memory: 500Mi
+              cpu: 300m

@@ -1,0 +1,35 @@
+{
+  "name": "product-service",
+  "version": "1.0.0",
+  "description": "Microservice de gestion des produits - E-commerce Microservices",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "test": "jest --coverage --reporters=default --reporters=jest-junit"
+  },
+  "keywords": [
+    "microservice",
+    "products",
+    "ecommerce",
+    "docker",
+    "kubernetes"
+  ],
+  "author": "Brahim BOUTFARJOUTE",
+  "license": "MIT",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.21.0",
+    "pg": "^8.13.0"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "jest-junit": "^17.0.0",
+    "supertest": "^7.0.0"
+  },
+
+  "jest-junit": {
+  "outputDirectory": "reports",
+  "outputName": "junit.xml"
+}
+}

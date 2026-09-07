@@ -1,0 +1,34 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: reviewdep
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: review
+  template:
+    metadata:
+      labels:
+        app: review
+    spec:
+      containers:
+        - name: review
+          image: brahimbtf/reviews-k3s-app
+          ports:
+            - containerPort: 8002
+          envFrom:
+            - configMapRef:
+                name: configmapprojetk3s
+            - secretRef:
+                name: secretprojetk3s
+          resources:
+            requests:
+              memory: 300Mi
+              cpu:  200m
+            limits:
+              memory: 500Mi
+              cpu: 300m
+
+
+
