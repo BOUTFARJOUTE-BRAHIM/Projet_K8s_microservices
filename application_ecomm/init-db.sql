@@ -1,26 +1,10 @@
 -- =============================================================
--- Script d'initialisation de la base de données PostgreSQL
--- pour les microservices E-commerce
--- =============================================================
---
--- Ce script crée toutes les tables nécessaires pour les 3 microservices :
---   - product-service  → table "products"
---   - cart-service      → table "cart_items"
---   - order-service     → tables "orders" et "order_items"
---
--- Utilisation :
---psql -h database01 -U postgres -d ecommerce -f init-db.sql
---
--- Ou via Docker :
---   docker exec -i <container_postgres> psql -U postgres -d ecommerce < init-db.sql
--- =============================================================
-
--- ========================
 -- Création de la base de données (si elle n'existe pas déjà)
 -- Exécuter cette commande séparément si nécessaire :
 CREATE DATABASE ecommerce;
--- ========================
-
+-- =============================================================
+CREATE USER brahim WITH PASSWORD 'if you create a password ensure that the same password is in secretfile in K8S';
+GRANT ALL PRIVILEGES ON DATABASE ecommerce TO brahim ;
 -- =============================================================
 -- TABLE : products (utilisée par product-service)
 -- =============================================================
