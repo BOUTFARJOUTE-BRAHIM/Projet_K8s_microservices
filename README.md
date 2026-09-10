@@ -7,46 +7,48 @@ Le projet combine volontairement plusieurs stacks technologiques (Node.js/Expres
 ---
 
 ## 📐 Architecture générale
-
 ```
+
                               ┌─────────────────────────┐
                               │      Utilisateur         │
                               └────────────┬─────────────┘
                                            │ HTTPS (ittech.work.gd)
                                   ┌────────▼─────────┐
-                                  │  Ingress Traefik   │  (cert-manager / Let's Encrypt)
+                                  │  Ingress Traefik │
+                                  │ cert-manager /   │
+                                  │ Let's Encrypt     │
                                   └────────┬─────────┘
                                            │
+                                  ┌────────▼──────────┐
+                                  │ frontend (Next.js)│
+                                  │ NodePort :30090   │
+                                  │ Server Components │
+                                  │ Server Actions    │
+                                  └────────┬───────────┘
+                                           │
+       ┌───────────────────────────────────┼────────────────────────────────────────┐
+       │             │             │             │             │             │
+       ▼             ▼             ▼             ▼             ▼             ▼
+┌─────────────┐ ┌────────────┐ ┌───────────┐ ┌──────────┐ ┌──────────┐ ┌─────────────┐
+│ product-srv │ │ cart-srv   │ │ order-srv │ │ user-srv │ │ review-srv│ │ article-srv │
+│ Node/Express│ │Node/Express│ │Node/Express││Django REST│ │Django REST│ │ Flask       │
+│    :3001    │ │   :3002    │ │   :3003   │ │   :8001  │ │   :8002  │ │    :5001    │
+└──────┬──────┘ └─────┬──────┘ └─────┬─────┘ └────┬─────┘ └────┬─────┘ └──────┬──────┘
+       │              │              │             │             │              │
+       └──────────────┴──────────────┴─────────────┴─────────────┴──────────────┘
+                                           │
                                   ┌────────▼─────────┐
-                                  │  frontend (Next.js)│  NodePort 30090 → :3000
-                                  │  Server Components  │
-                                  │  + Server Actions    │
-                                  └───┬───┬───┬───┬───┬─┘
-                    ┌─────────────────┘   │   │   │   └───────────────┐
-                    │            ┌────────┘   │   └────────┐          │
-                    ▼            ▼            ▼            ▼          ▼
-          ┌─────────────┐ ┌────────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐
-          │product-srv   │ │cart-srv     │ │order-srv  │ │user-srv   │ │review-srv │
-          │Node/Express  │ │Node/Express │ │Node/Express│ │Django REST│ │Django REST│
-          │:3001         │ │:3002        │ │:3003       │ │:8001       │ │:8002      │
-          └──────┬───────┘ └──────┬─────┘ └─────┬──────┘ └─────┬──────┘ └─────┬─────┘
-                 │                 │              │ (vérifie produit)│              │
-                 └─────────────────┴──────────────┴──────┬─────────┴──────────────┘
-                                                            │
-                                                   ┌────────▼─────────┐
-                                                   │  database01        │  (Service ExternalName)
-                                                   │  → clusterdb-rw     │
-                                                   └────────┬─────────┘
-                                                   ┌────────▼─────────┐
-                                                   │ Cluster PostgreSQL  │
-                                                   │ CloudNativePG (cnpg)│
-                                                   │ 3 instances / 1Gi   │
-                                                   └────────────────────┘
+                                  │    database01    │
+                                  │ ExternalName     │
+                                  │ → clusterdb-rw   │
+                                  └────────┬─────────┘
+                                           │
+                                  ┌────────▼──────────┐
+                                  │ PostgreSQL Cluster│
+                                  │   CloudNativePG   │
+                                  │ 3 instances / 1Gi │
+                                  └───────────────────┘
 
-          ┌──────────────┐
-          │article-srv    │  Flask — blog/actualités, indépendant des autres domaines
-          │:5001          │
-          └───────────────┘
 ```
 
 Le **frontend Next.js** est le seul point d'entrée exposé côté navigateur : toutes les requêtes vers les microservices partent du serveur Next.js (Server Components / Server Actions), jamais du navigateur. Les URLs internes des services ne sont donc jamais exposées côté client.
