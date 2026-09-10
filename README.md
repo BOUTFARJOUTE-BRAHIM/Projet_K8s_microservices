@@ -12,7 +12,7 @@ Le projet combine volontairement plusieurs stacks technologiques (Node.js/Expres
                               ┌─────────────────────────┐
                               │      Utilisateur         │
                               └────────────┬─────────────┘
-                                           │ HTTPS (appmarket.work.gd)
+                                           │ HTTPS (ittech.work.gd)
                                   ┌────────▼─────────┐
                                   │  Ingress Traefik   │  (cert-manager / Let's Encrypt)
                                   └────────┬─────────┘
@@ -106,22 +106,11 @@ Chaque service Node.js/Flask possède son propre `Dockerfile`, `package.json`/`r
 - `PUT /:id` — modifier
 - `DELETE /:id` — supprimer
 
-Chaque microservice expose également un endpoint **`/health`** utilisé par Kubernetes (liveness/readiness) et renvoyant `{ service, status: "UP", timestamp }`.
+Chaque microservice expose également un endpoint **`/health`**  et renvoyant `{ service, status: "UP", timestamp }`.
 
 ---
 
 ## 🖥️ Frontend (nextjs-frontend)
-
-Frontend **Next.js 14 (App Router)** qui remplace une version antérieure en React + Vite. Le choix de Next.js répond à un objectif précis : que **toutes les requêtes vers les microservices partent du serveur**, jamais du navigateur.
-
-Différences clés par rapport à une SPA classique :
-
-| Avant (React + Vite) | Maintenant (Next.js) |
-|---|---|
-| Appels API déclenchés dans `useEffect`, côté navigateur | Appels effectués uniquement dans des **Server Components** (`lib/api.js`, marqué `server-only`) |
-| URLs des services exposées au client (`VITE_*`) | URLs connues uniquement du serveur, jamais envoyées au bundle JS |
-| CORS obligatoire sur chaque microservice | CORS non indispensable en production (le navigateur ne parle qu'au frontend) |
-| `fetch()` déclenché au clic | **Server Actions** (`lib/actions.js`, `'use server'`) + `revalidatePath()` pour rafraîchir les données |
 
 Structure :
 ```
@@ -206,8 +195,8 @@ k8s_yaml_files/
 - **Config & secrets** : chaque `Deployment` injecte les variables d'environnement via `envFrom` (ConfigMap `configmapprojetk3s` + Secret `secretprojetk3s`), donc `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD` sont communs à tous les services.
 - **Résolution de la base** : le Service `database01` (type `ExternalName`) redirige vers `clusterdb-rw.default.svc.cluster.local`, le service en lecture/écriture généré par CloudNativePG. C'est ce nom (`database01`) qui est utilisé comme `DB_HOST` dans la ConfigMap.
 - **Services internes** : chaque microservice backend a un `Service` `ClusterIP` (`product-srv`, `cart-srv`, `order-srv`, `user-srv`, `review-srv`, `article-srv`) — non exposés à l'extérieur du cluster.
-- **Exposition du frontend** : le Service `frontend` est de type `NodePort` (port `30090` → conteneur `3000`).
-- **Entrée HTTPS** : l'`Ingress` Traefik route `appmarket.work.gd` vers le service `frontend` (port 80), avec TLS géré automatiquement par `cert-manager` via un `ClusterIssuer` Let's Encrypt (production, challenge HTTP-01).
+- **Exposition du frontend** : le Service `frontend` est de type `ClusterIP` (port `80` → conteneur `3000`).
+- **Entrée HTTPS** : l'`Ingress` Traefik route `ittech.work.gd` vers le service `frontend` (port 80), avec TLS géré automatiquement par `cert-manager` via un `ClusterIssuer` Let's Encrypt (production, challenge HTTP-01).
 - **Ressources** : chaque pod backend déclare des *requests* (300Mi RAM / 200m CPU) et *limits* (500Mi RAM / 300m CPU).
 - **Images Docker** : toutes préfixées `brahimbtf/<service>-k3s-app` (ex. `brahimbtf/product-k3s-app`, `brahimbtf/front-k3s-app`), publiées sur Docker Hub.
 
@@ -222,6 +211,7 @@ kubectl apply -f k8s_yaml_files/configmap_secret/
 # 2. Base de données (nécessite l'opérateur CloudNativePG installé au préalable)
 kubectl apply -f k8s_yaml_files/db/postgres.yaml
 kubectl apply -f k8s_yaml_files/svc/externalname.yaml
+kubectl apply -f k8s_yaml_files/svc/
 
 # 3. Initialiser le schéma (une fois la base prête)
 kubectl exec -it <pod-postgres> -- psql -U postgres -d ecommerce -f init-db.sql
@@ -234,31 +224,6 @@ kubectl apply -f k8s_yaml_files/svc/
 
 # 6. Ingress + TLS (nécessite Traefik + cert-manager installés)
 kubectl apply -f k8s_yaml_files/ingresScertmanager/
-```
-
----
-
-## 🐳 Exécution locale (Docker)
-
-Chaque service peut être construit et lancé indépendamment :
-
-```bash
-# Exemple : product-service
-cd application_ecomm/product-service
-docker build -t product-service .
-docker run -p 3001:3001 \
-  -e DB_HOST=<host> -e DB_PORT=5432 -e DB_USER=<user> \
-  -e DB_PASSWORD=<pass> -e DB_NAME=ecommerce \
-  product-service
-```
-
-Répéter pour `cart-service` (3002), `order-service` (3003, + `PRODUCT_SERVICE_URL`), `user-service` (8001), `review-service` (8002), `article-service` (5001), puis initialiser PostgreSQL avec `application_ecomm/init-db.sql` et lancer le frontend :
-
-```bash
-cd application_ecomm/nextjs-frontend
-npm install
-cp .env .env.local   # ajuster les URLs (ex. http://localhost:3001 pour PRODUCT_SERVICE_URL)
-npm run dev           # http://localhost:3000
 ```
 
 ---
@@ -320,14 +285,6 @@ Projet_K8s_microservices-main/
 | Conteneurisation | Docker (images `node:20-alpine`, `python:3.12-slim`) |
 | Orchestration | Kubernetes (k3s), Traefik (Ingress Controller) |
 | Sécurité / TLS | cert-manager + Let's Encrypt (ClusterIssuer) |
-| Qualité de code | SonarQube |
 | Tests | Jest + Supertest (Node.js), pytest (Flask), Django TestCase |
 
 ---
-
-## 📝 Notes
-
-- Toutes les communications entre le frontend et les microservices passent par le serveur Next.js (Server Components / Server Actions) : aucune URL de service interne n'est jamais exposée au navigateur.
-- La communication **order-service → product-service** illustre un pattern classique de vérification synchrone entre microservices via API REST.
-- Le fichier `k8s_yaml_files/db/postgres.yaml` nécessite que l'opérateur **CloudNativePG** soit déjà installé sur le cluster (CRD `postgresql.cnpg.io`).
-- L'Ingress cible le nom d'hôte `appmarket.work.gd` — à adapter selon votre propre nom de domaine.
