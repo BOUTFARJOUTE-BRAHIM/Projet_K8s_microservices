@@ -20,8 +20,7 @@ Le projet combine volontairement plusieurs stacks technologiques (Node.js/Expres
                                   └────────┬─────────┘
                                            │
                                   ┌────────▼──────────┐
-                                  │ frontend (Next.js)│
-                                  │ NodePort :30090   │
+                                  │     frontend
                                   │ Server Components │
                                   │ Server Actions    │
                                   └────────┬───────────┘
