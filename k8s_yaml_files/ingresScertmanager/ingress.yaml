@@ -8,10 +8,10 @@ spec:
   ingressClassName: traefik
   tls:
     - hosts:
-        - appmarket.work.gd
+        - ittech.work.gd
       secretName: certificate-tls
   rules:
-    - host: appmarket.work.gd
+    - host: ittech.work.gd
       http:
         paths:
           - path: /
